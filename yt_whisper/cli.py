@@ -17,6 +17,8 @@ def main():
                         choices=whisper.available_models(), help="name of the Whisper model to use")
     parser.add_argument("--format", default="vtt",
                         choices=["vtt", "srt"], help="the subtitle format to output")
+    parser.add_argument("--input_dir", "-o", type=str,
+                        default=".", help="directory to search the inputs")
     parser.add_argument("--output_dir", "-o", type=str,
                         default=".", help="directory to save the outputs")
     parser.add_argument("--verbose", type=str2bool, default=False,
@@ -32,6 +34,7 @@ def main():
     args = parser.parse_args().__dict__
     model_name: str = args.pop("model")
     output_dir: str = args.pop("output_dir")
+    input_dir: str = args.pop("input_dir")
     subtitles_format: str = args.pop("format")
     os.makedirs(output_dir, exist_ok=True)
 
@@ -63,31 +66,12 @@ def main():
             print("Saved SRT to", os.path.abspath(srt_path))
 
 
-def get_audio(urls):
-    temp_dir = tempfile.gettempdir()
-
-    ydl = youtube_dl.YoutubeDL({
-        'quiet': True,
-        'verbose': False,
-        'no_warnings': True,
-        'format': 'bestaudio/best',
-        "outtmpl": os.path.join(temp_dir, "%(id)s.%(ext)s"),
-        'progress_hooks': [youtube_dl_log],
-        'postprocessors': [{
-            'preferredcodec': 'mp3',
-            'preferredquality': '192',
-            'key': 'FFmpegExtractAudio',
-        }],
-    })
-
+def get_audio(urls, input_dir):
     paths = {}
 
     for url in urls:
-        result = ydl.extract_info(url, download=True)
-        print(
-            f"Downloaded video \"{result['title']}\". Generating subtitles..."
-        )
-        paths[result["title"]] = os.path.join(temp_dir, f"{result['id']}.mp3")
+      
+        paths[url] = os.path.join(input_dir, url)
 
     return paths
 
